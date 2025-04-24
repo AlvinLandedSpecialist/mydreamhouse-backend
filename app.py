@@ -1,5 +1,9 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
+import os
+
 app = Flask(__name__)
+CORS(app)
 
 projects = [
     {"name": "Cyberjaya Project", "lat": 2.9226, "lng": 101.6500, "area": "Cyberjaya", "link": "/project/Cyberjaya-Project"},
@@ -14,9 +18,10 @@ projects = [
     {"name": "Sungai Buloh Project", "lat": 3.2131, "lng": 101.5778, "area": "Sungai Buloh", "link": "/project/Sungai-Buloh-Project"}
 ]
 
-@app.route('/api/projects', methods=['GET'])
+@app.route('/api/projects')
 def get_projects():
     return jsonify(projects)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
