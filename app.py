@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 # --- ✅ 配置 JWT 密钥 ---
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'your_fallback_secret_key')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default_secret_key')
 
 # --- ✅ 配置数据库 URI（Render PostgreSQL）---
 uri = os.environ.get('DATABASE_URL')  # Render 会提供 DATABASE_URL
@@ -21,6 +21,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- 初始化数据库 & JWT ---
 db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
 jwt = JWTManager(app)
 
 # --- 注册蓝图 ---
