@@ -9,11 +9,11 @@ CORS(app)
 # 数据库连接函数
 def get_db_connection():
     return psycopg2.connect(
-        host=os.environ.get('DB_HOST'),
-        database=os.environ.get('DB_NAME'),
-        user=os.environ.get('DB_USER'),
-        password=os.environ.get('DB_PASSWORD'),
-        port=os.environ.get('DB_PORT', 5432)  # 默认端口
+        host="dpg-d05g3eruibrs73flp99g-a.singapore-postgres.render.com",
+        database="mydreamhouse_db",
+        user="mydreamhouse_db_user",
+        password="avFhthVgzSBekdpmHhsIvGNpGaoLgHFO",
+        port=5432
     )
 
 @app.route('/api/projects')
