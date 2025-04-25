@@ -31,6 +31,10 @@ jwt = JWTManager(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(project_bp)
 
+@app.route('/')
+def home():
+    return "Welcome to the homepage!"
+
 # --- 用户注册接口 ---
 @app.route('/register', methods=['POST'])
 def register():
