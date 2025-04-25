@@ -64,6 +64,23 @@ def login():
         return jsonify(access_token=access_token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 
+@app.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    data = request.json
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
+    if not user.check_password(old_password):
+        return jsonify({"msg": "Old password is incorrect"}), 400
+
+    user.set_password(new_password)
+    db.session.commit()
+    return jsonify({"msg": "Password updated successfully"}), 200
+
 # --- 创建项目接口 ---
 @app.route('/projects', methods=['POST'])
 @jwt_required()
