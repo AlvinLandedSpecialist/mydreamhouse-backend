@@ -31,10 +31,10 @@ jwt = JWTManager(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(project_bp)
 
-# --- 处理根路径的测试路由 ---
+# --- 根路径测试 ---
 @app.route('/')
 def index():
-    return "API is working!"  # 你访问根路径时会看到这个消息
+    return "API is working!"
 
 # --- 用户注册接口 ---
 @app.route('/register', methods=['POST'])
@@ -64,7 +64,7 @@ def login():
         return jsonify(access_token=access_token), 200
     return jsonify({"msg": "Invalid credentials"}), 401
 
-# --- 创建项目接口 ---
+# --- 创建项目接口（需要登录）---
 @app.route('/projects', methods=['POST'])
 @jwt_required()
 def create_project():
@@ -82,6 +82,12 @@ def create_project():
     db.session.add(new_project)
     db.session.commit()
     return jsonify({"msg": "Project created successfully!"}), 201
+
+# --- ✅ 获取所有项目（公开） ---
+@app.route('/projects', methods=['GET'])
+def get_projects():
+    projects = Project.query.order_by(Project.id.desc()).all()
+    return jsonify([p.to_dict() for p in projects]), 200
 
 # --- 启动程序 ---
 if __name__ == '__main__':
