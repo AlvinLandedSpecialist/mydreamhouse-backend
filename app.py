@@ -10,6 +10,10 @@ import os
 app = Flask(__name__)
 app.config.from_object(Config)
 
+@app.route('/')
+def home():
+    return "Welcome to the Home Page"
+
 # CORS 配置
 CORS(app)
 
