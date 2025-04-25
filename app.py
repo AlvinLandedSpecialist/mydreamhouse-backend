@@ -1,7 +1,7 @@
-# app.py
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_migrate import Migrate
 from models import db
 from auth import auth_bp
 from config import Config
@@ -10,14 +10,22 @@ import os
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# CORS 配置
 CORS(app)
+
+# 数据库配置
 db.init_app(app)
+migrate = Migrate(app, db)
+
+# JWT 配置
 jwt = JWTManager(app)
 
+# 注册蓝图
 app.register_blueprint(auth_bp)
 
 @app.before_first_request
 def create_tables():
+    # 使用数据库迁移替代此处创建表的方式
     db.create_all()
 
 if __name__ == '__main__':
