@@ -18,6 +18,11 @@ def get_db_connection():
         password=os.getenv("DB_PASSWORD"),
         port=5432
     )
+    
+@app.route('/')
+def index():
+    return 'API is running. Use /api/projects to get data.'
+
 
 @app.route('/api/projects')
 def get_projects():
