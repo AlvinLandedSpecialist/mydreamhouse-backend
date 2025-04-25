@@ -1,18 +1,19 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import psycopg2
 import os
+import psycopg2
 
 app = Flask(__name__)
 CORS(app)
 
-# 假设你已设定好数据库连接
+# 数据库连接函数
 def get_db_connection():
     return psycopg2.connect(
         host=os.environ.get('DB_HOST'),
         database=os.environ.get('DB_NAME'),
         user=os.environ.get('DB_USER'),
-        password=os.environ.get('DB_PASSWORD')
+        password=os.environ.get('DB_PASSWORD'),
+        port=os.environ.get('DB_PORT', 5432)  # 默认端口
     )
 
 @app.route('/api/projects')
@@ -22,7 +23,6 @@ def get_projects():
 
     conn = get_db_connection()
     cur = conn.cursor()
-
     cur.execute(f'''
         SELECT id, {name_column} AS name, area, lat, lng, link FROM projects
     ''')
@@ -42,3 +42,7 @@ def get_projects():
         for row in rows
     ]
     return jsonify(projects)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
