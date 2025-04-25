@@ -1,28 +1,22 @@
-import jwt
-import datetime
-from flask import Blueprint, request, jsonify
-from werkzeug.security import check_password_hash
+from flask import request, jsonify
+from flask_jwt_extended import create_access_token
+from app import app, db
+from models import User
 
-auth_bp = Blueprint('auth', __name__)
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    new_user = User(username=data['username'])
+    new_user.set_password(data['password'])
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify(message="User registered successfully"), 201
 
-# 设置管理员账号和密码（哈希版）
-ADMIN_USERNAME = 'admin'
-ADMIN_PASSWORD_HASH = 'pbkdf2:sha256:260000$'
-
-SECRET_KEY = 'your_jwt_secret_key'  # 可以换成更复杂的 key，放在 .env 更安全
-
-@auth_bp.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-
-    if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password):
-        token = jwt.encode({
-            'username': username,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=12)
-        }, SECRET_KEY, algorithm='HS256')
-
-        return jsonify({'token': token})
-    else:
-        return jsonify({'message': 'Invalid credentials'}), 401
+    data = request.get_json()
+    user = User.query.filter_by(username=data['username']).first()
+    if user and user.check_password(data['password']):
+        access_token = create_access_token(identity=user.id)
+        return jsonify(access_token=access_token), 200
+    return jsonify(message="Invalid credentials"), 401
