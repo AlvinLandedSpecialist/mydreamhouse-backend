@@ -5,6 +5,7 @@ from flask_jwt_extended import JWTManager
 from models import db
 from auth import auth_bp
 from config import Config
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -20,4 +21,5 @@ def create_tables():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
