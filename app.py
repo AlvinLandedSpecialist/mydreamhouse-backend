@@ -15,7 +15,6 @@ jwt = JWTManager(app)
 
 app.register_blueprint(auth_bp)
 
-# 初始化数据库
 @app.before_first_request
 def create_tables():
     db.create_all()
