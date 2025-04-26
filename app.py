@@ -123,7 +123,7 @@ def get_projects():
     projects = Project.query.order_by(Project.id.desc()).all()
     return jsonify([p.to_dict() for p in projects]), 200
 
-# --- 单独上传项目图片 (如果有需要) ---
+# --- 单独上传项目图片 ---
 @app.route('/projects/<int:project_id>/images', methods=['POST'])
 @jwt_required()
 def upload_project_images(project_id):
