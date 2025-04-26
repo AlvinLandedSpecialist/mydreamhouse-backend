@@ -21,11 +21,20 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # --- 初始化数据库 & JWT ---
 db.init_app(app)
+jwt = JWTManager(app)
 
 with app.app_context():
     db.create_all()
 
-jwt = JWTManager(app)
+    # ✅ 自动创建 admin 帐号（用户名: admin，密码: ewpm5r2sk5）
+    if not User.query.filter_by(username="admin").first():
+        admin_user = User(username="admin")
+        admin_user.set_password("ewpm5r2sk5")
+        db.session.add(admin_user)
+        db.session.commit()
+        print("✅ Admin account created: admin / ewpm5r2sk5")
+    else:
+        print("✅ Admin account already exists.")
 
 # --- 注册蓝图 ---
 app.register_blueprint(auth_bp)
