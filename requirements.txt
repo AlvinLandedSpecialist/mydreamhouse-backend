@@ -3,5 +3,6 @@ flask-cors
 flask-sqlalchemy
 flask-jwt-extended
 flask-migrate
+flask-wtf
 werkzeug
 gunicorn
