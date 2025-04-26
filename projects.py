@@ -6,9 +6,26 @@ project_bp = Blueprint('projects', __name__)
 
 @project_bp.route('/projects', methods=['GET'])
 def get_projects():
-    """公开获取所有项目"""
-    projects = Project.query.order_by(Project.id.desc()).all()
-    return jsonify([p.to_dict() for p in projects]), 200
+    """获取分页项目列表"""
+    page = request.args.get('page', 1, type=int)  # 获取页码，默认值为1
+    per_page = 10  # 每页显示10个项目
+
+    # 获取查询条件（如果有）
+    filter_price = request.args.get('price', type=int)
+
+    # 查询项目
+    query = Project.query
+    if filter_price:
+        query = query.filter(Project.price <= filter_price)
+    
+    projects = query.order_by(Project.id.desc()).paginate(page, per_page, False)
+
+    return jsonify({
+        'projects': [p.to_dict() for p in projects.items],  # 返回项目数据
+        'total_pages': projects.pages,  # 总页数
+        'current_page': projects.page,  # 当前页码
+    }), 200
+
 
 @project_bp.route('/projects', methods=['POST'])
 @jwt_required()
