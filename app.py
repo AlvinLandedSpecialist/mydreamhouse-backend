@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from werkzeug.utils import secure_filename
+from sqlalchemy import desc
 import os
 
 from models import db, User, Project, ProjectImage
@@ -148,6 +149,102 @@ def upload_project_images(project_id):
     db.session.commit()
 
     return jsonify({"msg": "Images uploaded successfully", "images": uploaded_urls}), 201
+
+# --- 删除项目（连带删除图片文件和记录） ---
+@app.route('/projects/<int:project_id>', methods=['DELETE'])
+@jwt_required()
+def delete_project(project_id):
+    current_user = get_jwt_identity()
+    project = Project.query.get_or_404(project_id)
+
+    if project.user_id != current_user:
+        return jsonify({"msg": "Not authorized"}), 403
+
+    # 删除项目封面图
+    if project.cover_photo_url:
+        cover_path = project.cover_photo_url.lstrip('/')
+        if os.path.exists(cover_path):
+            os.remove(cover_path)
+
+    # 删除附加图片
+    for image in project.images:
+        image_path = image.image_url.lstrip('/')
+        if os.path.exists(image_path):
+            os.remove(image_path)
+        db.session.delete(image)
+
+    # 删除项目本身
+    db.session.delete(project)
+    db.session.commit()
+
+    return jsonify({"msg": "Project deleted successfully!"}), 200
+
+# --- 编辑项目 ---
+@app.route('/projects/<int:project_id>', methods=['PUT'])
+@jwt_required()
+def edit_project(project_id):
+    current_user = get_jwt_identity()
+    project = Project.query.get_or_404(project_id)
+
+    if project.user_id != current_user:
+        return jsonify({"msg": "Not authorized"}), 403
+
+    data = request.form
+
+    project.title = data.get('title', project.title)
+    project.content = data.get('content', project.content)
+    project.price = data.get('price', project.price)
+    project.youtube_link = data.get('youtube_link', project.youtube_link)
+
+    # 更新封面图（如果有新的上传）
+    new_cover = request.files.get('cover_photo')
+    if new_cover:
+        # 删除旧封面
+        if project.cover_photo_url:
+            old_cover_path = project.cover_photo_url.lstrip('/')
+            if os.path.exists(old_cover_path):
+                os.remove(old_cover_path)
+
+        # 保存新封面
+        filename = secure_filename(new_cover.filename)
+        cover_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        new_cover.save(cover_path)
+        project.cover_photo_url = f"/uploads/photos/{filename}"
+
+    db.session.commit()
+    return jsonify({"msg": "Project updated successfully!"}), 200
+
+# --- 分页查询项目 ---
+@app.route('/projects/paginated', methods=['GET'])
+def get_projects_paginated():
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+    except ValueError:
+        return jsonify({"msg": "Invalid page or per_page parameter"}), 400
+
+    projects_query = Project.query.order_by(desc(Project.id))
+    pagination = projects_query.paginate(page=page, per_page=per_page, error_out=False)
+
+    projects = [project.to_dict() for project in pagination.items]
+    return jsonify({
+        "projects": projects,
+        "total": pagination.total,
+        "pages": pagination.pages,
+        "current_page": pagination.page
+    }), 200
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"msg": "Resource not found"}), 404
+
+@app.errorhandler(500)
+def server_error(error):
+    return jsonify({"msg": "Internal server error"}), 500
+
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({"msg": "Bad request"}), 400
 
 # --- 启动 ---
 if __name__ == '__main__':
