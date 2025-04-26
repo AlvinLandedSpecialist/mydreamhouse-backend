@@ -6,6 +6,6 @@ python-dotenv
 flask-jwt-extended
 flask-migrate
 Flask-WTF
-Flask-Upload
+Flask-Uploads
 werkzeug==2.1.2
 gunicorn
