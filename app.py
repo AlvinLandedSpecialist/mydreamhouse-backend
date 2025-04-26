@@ -4,9 +4,13 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 from werkzeug.utils import secure_filename
 from sqlalchemy import desc
 import os
-
 from models import db, User, Project, ProjectImage
 from config import Config
+import uuid
+
+def generate_unique_filename(original_filename):
+    ext = os.path.splitext(original_filename)[1]
+    return f"{uuid.uuid4().hex}{ext}"
 
 app = Flask(__name__)
 CORS(app)
