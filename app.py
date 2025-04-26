@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, FileStorage
 from flask_wtf import FlaskForm
 from flask_uploads import UploadSet, configure_uploads, IMAGES
 from wtforms import StringField, TextAreaField, IntegerField
