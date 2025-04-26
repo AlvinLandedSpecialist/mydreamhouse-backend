@@ -5,7 +5,7 @@ psycopg2-binary
 python-dotenv
 flask-jwt-extended
 flask-migrate
-flask-wtf
-flask-uploads
+Flask-WTF
+Flask-Upload
 werkzeug==2.1.2
 gunicorn
