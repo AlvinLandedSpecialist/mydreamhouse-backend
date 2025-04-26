@@ -1,8 +1,11 @@
-Flask
+flask
 flask-cors
+flask-sqlalchemy
 psycopg2-binary
 python-dotenv
 flask-jwt-extended
+flask-migrate
 flask-wtf
 flask-uploads
+werkzeug
 gunicorn
