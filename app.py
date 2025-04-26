@@ -84,7 +84,7 @@ def create_project():
     cover_photo = request.files.get('cover_photo')
     cover_photo_url = None
     if cover_photo:
-        filename = secure_filename(cover_photo.filename)
+        filename = generate_unique_filename(cover_photo.filename)
         cover_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         cover_photo.save(cover_path)
         cover_photo_url = f"/uploads/photos/{filename}"
@@ -105,7 +105,7 @@ def create_project():
     additional_photos = request.files.getlist('additional_photos')
     for photo in additional_photos:
         if photo:
-            filename = secure_filename(photo.filename)
+            filename = generate_unique_filename(photo.filename)
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(path)
             photo_url = f"/uploads/photos/{filename}"
@@ -141,7 +141,7 @@ def upload_project_images(project_id):
 
     for photo in photos_list:
         if photo:
-            filename = secure_filename(photo.filename)
+            filename = generate_unique_filename(photo.filename)
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(path)
             photo_url = f"/uploads/photos/{filename}"
@@ -210,7 +210,7 @@ def edit_project(project_id):
                 os.remove(old_cover_path)
 
         # 保存新封面
-        filename = secure_filename(new_cover.filename)
+        filename = generate_unique_filename(new_cover.filename)
         cover_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         new_cover.save(cover_path)
         project.cover_photo_url = f"/uploads/photos/{filename}"
@@ -240,15 +240,15 @@ def get_projects_paginated():
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({"msg": "Resource not found"}), 404
+    return jsonify({"msg": "Resource not found", "error": str(error)}), 404
 
 @app.errorhandler(500)
 def server_error(error):
-    return jsonify({"msg": "Internal server error"}), 500
+    return jsonify({"msg": "Internal server error", "error": str(error)}), 500
 
 @app.errorhandler(400)
 def bad_request(error):
-    return jsonify({"msg": "Bad request"}), 400
+    return jsonify({"msg": "Bad request", "error": str(error)}), 400
 
 # --- 启动 ---
 if __name__ == '__main__':
