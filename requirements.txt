@@ -5,5 +5,5 @@ flask-jwt-extended
 flask-migrate
 flask-wtf
 flask-uploads
-werkzeug 2.0
+werkzeug
 gunicorn
