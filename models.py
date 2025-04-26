@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# 初始化 SQLAlchemy 实例
+# 初始化 SQLAlchemy 实例，后续在 app.py 中通过 db.init_app(app) 绑定
 db = SQLAlchemy()
 
 class User(db.Model):
@@ -29,9 +29,11 @@ class Project(db.Model):
     content = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, nullable=False)
     youtube_link = db.Column(db.String(500), nullable=True)
-    image_url = db.Column(db.String(500), nullable=True)  # ✅ 图片字段
+    image_url = db.Column(db.String(500), nullable=True)  # 封面图
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
     user = db.relationship('User', backref=db.backref('projects', lazy=True))
+    images = db.relationship('ProjectImage', backref='project', lazy=True)  # 附加图关系
 
     def to_dict(self):
         return {
@@ -40,6 +42,13 @@ class Project(db.Model):
             "content": self.content,
             "price": self.price,
             "youtube_link": self.youtube_link,
-            "image_url": self.image_url,  # ✅ 加入返回图片链接
-            "user_id": self.user_id
+            "image_url": self.image_url,
+            "user_id": self.user_id,
+            "extra_images": [img.image_url for img in self.images]
         }
+
+class ProjectImage(db.Model):
+    __tablename__ = 'project_images'
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
