@@ -4,5 +4,6 @@ flask-sqlalchemy
 flask-jwt-extended
 flask-migrate
 flask-wtf
+flask-uploads
 werkzeug
 gunicorn
