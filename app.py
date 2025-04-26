@@ -4,7 +4,6 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from flask_wtf import FlaskForm
-from flask_uploads import UploadSet, configure_uploads, IMAGES
 from wtforms import StringField, TextAreaField, IntegerField
 from wtforms.validators import DataRequired
 from models import db, User, Project, ProjectImage
