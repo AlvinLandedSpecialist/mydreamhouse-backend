@@ -5,36 +5,21 @@ from models import db, User, Project
 from auth import auth_bp
 from projects import project_bp
 import os
+from config import Config  # 引入配置文件
 
 app = Flask(__name__)
 CORS(app)
 
-# --- ✅ 配置 JWT 密钥 ---
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'default_secret_key')
+# --- ✅ 配置 JWT 和数据库 --- 
+app.config.from_object(Config)  # 从配置文件加载配置
 
-# --- ✅ 配置数据库 URI（Render PostgreSQL）---
-uri = os.environ.get('DATABASE_URL')  # Render 会提供 DATABASE_URL
-if uri and uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = uri or 'sqlite:///local.db'  # 本地开发 fallback
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# --- 初始化数据库 & JWT ---
+# 初始化数据库 & JWT
 db.init_app(app)
-jwt = JWTManager(app)
 
 with app.app_context():
     db.create_all()
 
-    # ✅ 自动创建 admin 帐号（用户名: admin，密码: ewpm5r2sk5）
-    if not User.query.filter_by(username="admin").first():
-        admin_user = User(username="admin")
-        admin_user.set_password("ewpm5r2sk5")
-        db.session.add(admin_user)
-        db.session.commit()
-        print("✅ Admin account created: admin / ewpm5r2sk5")
-    else:
-        print("✅ Admin account already exists.")
+jwt = JWTManager(app)
 
 # --- 注册蓝图 ---
 app.register_blueprint(auth_bp)
@@ -92,7 +77,7 @@ def create_project():
     db.session.commit()
     return jsonify({"msg": "Project created successfully!"}), 201
 
-# --- ✅ 获取所有项目（公开） ---
+# --- 获取所有项目（公开） ---
 @app.route('/projects', methods=['GET'])
 def get_projects():
     projects = Project.query.order_by(Project.id.desc()).all()
