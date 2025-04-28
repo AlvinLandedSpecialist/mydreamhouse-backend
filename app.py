@@ -5,24 +5,32 @@ from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
 from sqlalchemy import desc
 import os
+import uuid
 from models import db, User, Project, ProjectImage
 from config import Config
-import uuid
 
+# --- Helper Functions ---
 def generate_unique_filename(original_filename):
     ext = os.path.splitext(original_filename)[1]
     return f"{uuid.uuid4().hex}{ext}"
 
+def delete_file(file_path):
+    """删除文件如果存在"""
+    full_path = file_path.lstrip('/')
+    if os.path.exists(full_path):
+        os.remove(full_path)
+
+# --- App Initialization ---
 app = Flask(__name__)
 CORS(app)
 
-# --- Configuration ---
 app.config.from_object(Config)
 app.config['UPLOAD_FOLDER'] = 'uploads/photos'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB upload limit
+
+# Create upload folder if not exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# --- Initialization ---
 db.init_app(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
@@ -31,20 +39,25 @@ with app.app_context():
     db.create_all()
 
 # --- Routes ---
+
 @app.route('/')
 def home():
-    return "Welcome to the Home Page"
+    return "Welcome to MyDreamHouse API"
 
-# --- Static file access ---
+# Static file serving (uploaded photos)
 @app.route('/uploads/photos/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # --- Authentication ---
+
 @app.route('/register', methods=['POST'])
 def register():
     username = request.json.get('username')
     password = request.json.get('password')
+
+    if not username or not password:
+        return jsonify({"msg": "Username and password required"}), 400
 
     if User.query.filter_by(username=username).first():
         return jsonify({"msg": "User already exists"}), 400
@@ -65,9 +78,11 @@ def login():
     if user and user.check_password(password):
         access_token = create_access_token(identity=user.id)
         return jsonify(access_token=access_token), 200
+
     return jsonify({"msg": "Invalid credentials"}), 401
 
 # --- Project Management ---
+
 @app.route('/projects', methods=['POST'])
 @jwt_required()
 def create_project():
@@ -79,12 +94,12 @@ def create_project():
     youtube_link = request.form.get('youtube_link')
 
     if not all([title, content, price]):
-        return jsonify({"msg": "Missing fields"}), 400
+        return jsonify({"msg": "Missing fields: title, content, or price"}), 400
 
     # Save cover photo
     cover_photo = request.files.get('cover_photo')
     cover_photo_url = None
-    if cover_photo:
+    if cover_photo and cover_photo.filename:
         filename = generate_unique_filename(cover_photo.filename)
         cover_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         cover_photo.save(cover_path)
@@ -105,7 +120,7 @@ def create_project():
     # Save additional photos
     additional_photos = request.files.getlist('additional_photos')
     for photo in additional_photos:
-        if photo:
+        if photo and photo.filename:
             filename = generate_unique_filename(photo.filename)
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(path)
@@ -134,7 +149,7 @@ def get_projects_paginated():
     projects_query = Project.query.order_by(desc(Project.id))
     pagination = projects_query.paginate(page=page, per_page=per_page, error_out=False)
 
-    projects = [project.to_dict() for project in pagination.items]
+    projects = [p.to_dict() for p in pagination.items]
     return jsonify({
         "projects": projects,
         "total": pagination.total,
@@ -151,14 +166,11 @@ def upload_project_images(project_id):
     if project.user_id != current_user:
         return jsonify({"msg": "Not authorized"}), 403
 
-    if 'photos' not in request.files:
-        return jsonify({"msg": "No photos uploaded"}), 400
-
     photos_list = request.files.getlist('photos')
     uploaded_urls = []
 
     for photo in photos_list:
-        if photo:
+        if photo and photo.filename:
             filename = generate_unique_filename(photo.filename)
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             photo.save(path)
@@ -190,20 +202,17 @@ def edit_project(project_id):
 
     # Update cover photo if new one uploaded
     new_cover = request.files.get('cover_photo')
-    if new_cover:
-        # Delete old cover
+    if new_cover and new_cover.filename:
         if project.cover_photo_url:
-            old_cover_path = project.cover_photo_url.lstrip('/')
-            if os.path.exists(old_cover_path):
-                os.remove(old_cover_path)
+            delete_file(project.cover_photo_url)
 
-        # Save new cover
         filename = generate_unique_filename(new_cover.filename)
         cover_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         new_cover.save(cover_path)
         project.cover_photo_url = f"/uploads/photos/{filename}"
 
     db.session.commit()
+
     return jsonify({"msg": "Project updated successfully!"}), 200
 
 @app.route('/projects/<int:project_id>', methods=['DELETE'])
@@ -217,24 +226,24 @@ def delete_project(project_id):
 
     # Delete cover photo
     if project.cover_photo_url:
-        cover_path = project.cover_photo_url.lstrip('/')
-        if os.path.exists(cover_path):
-            os.remove(cover_path)
+        delete_file(project.cover_photo_url)
 
     # Delete additional images
     for image in project.images:
-        image_path = image.image_url.lstrip('/')
-        if os.path.exists(image_path):
-            os.remove(image_path)
+        delete_file(image.image_url)
         db.session.delete(image)
 
-    # Delete project
     db.session.delete(project)
     db.session.commit()
 
     return jsonify({"msg": "Project deleted successfully!"}), 200
 
 # --- Error Handlers ---
+
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({"msg": "Bad request", "error": str(error)}), 400
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({"msg": "Resource not found", "error": str(error)}), 404
@@ -242,10 +251,6 @@ def not_found(error):
 @app.errorhandler(500)
 def server_error(error):
     return jsonify({"msg": "Internal server error", "error": str(error)}), 500
-
-@app.errorhandler(400)
-def bad_request(error):
-    return jsonify({"msg": "Bad request", "error": str(error)}), 400
 
 # --- Main ---
 if __name__ == '__main__':
