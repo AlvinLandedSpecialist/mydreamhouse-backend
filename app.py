@@ -9,6 +9,12 @@ import uuid
 from models import db, User, Project, ProjectImage
 from config import Config
 
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://mydreamhouse-static.vercel.app',
+  credentials: true
+}));
+
 # --- Helper Functions ---
 def generate_unique_filename(original_filename):
     ext = os.path.splitext(original_filename)[1]
