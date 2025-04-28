@@ -53,12 +53,6 @@ def add_csp_header(response):
     )
     return response
 
-const cors = require('cors');
-app.use(cors({
-  origin: 'https://mydreamhouse-static.vercel.app',
-  credentials: true
-}));
-
 # --- Routes ---
 
 @app.route('/')
