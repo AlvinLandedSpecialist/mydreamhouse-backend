@@ -38,6 +38,21 @@ jwt = JWTManager(app)
 with app.app_context():
     db.create_all()
 
+# --- Add CSP Header --- 
+@app.after_request
+def add_csp_header(response):
+    # You can adjust the CSP rules to match your security needs
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self'; "
+        "connect-src 'self'; "
+        "frame-src 'self';"
+    )
+    return response
+
 # --- Routes ---
 
 @app.route('/')
